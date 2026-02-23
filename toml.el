@@ -41,7 +41,14 @@
 (require 'parse-time)
 
 (defconst toml->special-escape-characters
-  '(?b ?t ?n ?f ?r ?\" ?\/ ?\\)
+  '((?b . ?\b)
+    (?t . ?\t)
+    (?n . ?\n)
+    (?f . ?\f)
+    (?r . ?\r)
+    (?\" . ?\")
+    (?/ . ?/)
+    (?\\ . ?\\))
   "Characters which are escaped in TOML.
 
 \\b     - backspace       (U+0008)
@@ -232,13 +239,18 @@ Move point to the end of read characters."
   (unless (eq ?\\ (toml:read-char t))
     (signal 'toml-string-escape-error (list (point))))
   (let* ((char (toml:read-char t))
-         (special (memq char toml->special-escape-characters)))
+         (special (cdr (assq char toml->special-escape-characters))))
     (cond
-     (special (concat (list ?\\ char)))
+     (special (string special))
      ((and (eq char ?u)
-           (toml:search-forward "[0-9A-Fa-f]\\{4\\}"))
-      (concat "\\u" (match-string 0)))
-     (t (signal 'toml-string-unicode-escape-error (list (point)))))))
+           (or (toml:search-forward "[0-9A-Fa-f]\\{8\\}")
+               (toml:search-forward "[0-9A-Fa-f]\\{4\\}")))
+      (let* ((code (string-to-number (match-string 0) 16))
+             (ch (decode-char 'ucs code)))
+        (unless ch
+          (signal 'toml-string-unicode-escape-error (list (point))))
+        (string ch)))
+     (t (signal 'toml-string-escape-error (list (point)))))))
 
 (defun toml:read-string ()
   "Read string at point that surrounded by double quotation mark.

@@ -59,10 +59,18 @@ aiueo"
    (should (equal ?u (toml:get-char-at-point)))))
 
 (ert-deftest toml-test:read-escaped-char ()
-  (dolist (char '("\\b" "\\t" "\\n" "\\f" "\\r" "\\\"" "\\\/" "\\\\" "\\u1234"))
+  (dolist (mapping '(("\\b" . "\b")
+                     ("\\t" . "\t")
+                     ("\\n" . "\n")
+                     ("\\f" . "\f")
+                     ("\\r" . "\r")
+                     ("\\\"" . "\"")
+                     ("\\/"  . "/")
+                     ("\\\\" . "\\")
+                     ("\\u1234" . "ሴ")))
     (toml-test:buffer-setup
-     char
-     (should (equal char (toml:read-escaped-char)))
+     (car mapping)
+     (should (equal (cdr mapping) (toml:read-escaped-char)))
      (should (toml:end-of-line-p)))))
 
 (ert-deftest toml-test-error:read-escaped-char ()
@@ -74,7 +82,7 @@ aiueo"
 (ert-deftest toml-test:read-string ()
   (toml-test:buffer-setup
    "\"GitHub Cofounder & CEO\\nLikes tater tots and beer.\""
-   (should (equal "GitHub Cofounder & CEO\\nLikes tater tots and beer." (toml:read-string)))
+   (should (equal "GitHub Cofounder & CEO\nLikes tater tots and beer." (toml:read-string)))
    (should (toml:end-of-line-p))))
 
 (ert-deftest toml-test-error:read-string ()
@@ -303,15 +311,15 @@ aiueo"
    (should (equal "key" (toml:read-key)))
    (should (eq ?n (toml:get-char-at-point))))
 
-  ;; (toml-test:buffer-setup
-  ;;  "\"key\\n\" = name"
-  ;;  (should (equal "key\n" (toml:read-key)))
-  ;;  (should (eq ?n (toml:get-char-at-point))))
+  (toml-test:buffer-setup
+   "'key\\n' = name"
+   (should (equal "key\\n" (toml:read-key)))
+   (should (eq ?n (toml:get-char-at-point))))
 
-  ;; (toml-test:buffer-setup
-  ;;  "'key\\n' = name"
-  ;;  (should (equal "key\\n" (toml:read-key)))
-  ;;  (should (eq ?n (toml:get-char-at-point))))
+  (toml-test:buffer-setup
+   "\"key\\n\" = name"
+   (should (equal "key\n" (toml:read-key)))
+   (should (eq ?n (toml:get-char-at-point))))
 
   (toml-test:buffer-setup
    "'' = name"
