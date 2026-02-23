@@ -245,8 +245,9 @@ Move point to the end of read characters."
 Move point to the end of read strings."
   (unless (eq ?\" (toml:get-char-at-point))
     (signal 'toml-string-error (list (point))))
+  (forward-char)
   (let ((characters '())
-        (char (toml:read-char)))
+        (char (toml:get-char-at-point)))
     (while (not (eq char ?\"))
       (when (toml:end-of-line-p)
         (signal 'toml-string-error (list (point))))
